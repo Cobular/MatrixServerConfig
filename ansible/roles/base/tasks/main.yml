@@ -31,6 +31,12 @@
     groups: docker
     append: true
 
+# Group membership only applies to new login sessions. Drop the persistent
+# SSH connection so later docker tasks running as {{ admin_user }} see it —
+# otherwise the first-ever run fails at "Generate Synapse config".
+- name: Reset connection so docker group membership takes effect
+  meta: reset_connection
+
 - name: Enable unattended security upgrades
   copy:
     dest: /etc/apt/apt.conf.d/20auto-upgrades

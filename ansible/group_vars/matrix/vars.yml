@@ -45,11 +45,14 @@ federation_enabled: true
 backfill_mode: true
 
 # ── Discord Bridge Backfill ──
-# -1 = all history, 0 = disabled, N = last N messages.
 # MUST be set before first bridge login.
-backfill_initial_dm: -1
-backfill_initial_channel: -1
-backfill_initial_thread: -1
+# initial (portal creation): unlimited (-1) is NOT supported by the bridge —
+#   use a high finite limit. The bridge fetches the whole set from Discord
+#   BEFORE bridging anything, so expect a long quiet fetch phase per channel.
+# missed (bridge startup): -1 = everything since the last bridged message.
+backfill_initial_dm: 1000000
+backfill_initial_channel: 1000000
+backfill_initial_thread: 100000
 backfill_missed_dm: -1
 backfill_missed_channel: -1
 backfill_missed_thread: -1

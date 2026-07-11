@@ -34,7 +34,7 @@ bridge:
         "{{ matrix_server_name }}": user
         "@admin:{{ matrix_server_name }}": admin
     backfill:
-        limits:
+        forward_limits:
             initial:
                 dm: {{ backfill_initial_dm }}
                 channel: {{ backfill_initial_channel }}
