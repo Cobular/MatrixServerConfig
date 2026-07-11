@@ -36,6 +36,14 @@ max_upload_size: "100M"
 encryption_default: "all"
 federation_enabled: true
 
+# ── Backfill Mode ──
+# true  → size Postgres/Synapse for the up-specced backfill VM (16 GiB):
+#         2GB shared_buffers, synchronous_commit=off, large Synapse cache.
+# false → steady-state sizing for the B2s (4 GiB).
+# Flip together with the VM resize, then re-run ./deploy.sh configure.
+# Full procedure: RUNBOOK.md.
+backfill_mode: true
+
 # ── Discord Bridge Backfill ──
 # -1 = all history, 0 = disabled, N = last N messages.
 # MUST be set before first bridge login.

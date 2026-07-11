@@ -4,6 +4,10 @@ A complete, reproducible Matrix homeserver deployment with Discord bridge migrat
 
 Two-phase deployment: ARM template provisions Azure infrastructure, Ansible configures everything on the server. Each phase is independently re-runnable.
 
+> **Deploying or resuming right now?** Follow [RUNBOOK.md](RUNBOOK.md) — it has
+> the exact current state, the backfill up-spec/down-spec procedure, and
+> break-glass commands.
+
 ## What You Get
 
 - **Synapse** homeserver with E2E encryption enabled by default
