@@ -1,0 +1,49 @@
+# {{ ansible_managed }}
+server_name: "{{ matrix_server_name }}"
+public_baseurl: "https://{{ matrix_hostname }}/"
+pid_file: /data/homeserver.pid
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: "{{ postgres_synapse_password }}"
+    database: synapse
+    host: postgres
+    cp_min: 5
+    cp_max: 10
+
+# Explicit secrets (vaulted). Without registration_shared_secret,
+# register_new_matrix_user cannot create accounts.
+registration_shared_secret: "{{ registration_shared_secret }}"
+macaroon_secret_key: "{{ macaroon_secret_key }}"
+form_secret: "{{ form_secret }}"
+
+log_config: "/data/{{ matrix_server_name }}.log.config"
+media_store_path: /data/media_store
+max_upload_size: "{{ max_upload_size }}"
+enable_registration: false
+enable_registration_without_verification: false
+encryption_enabled_by_default_for_room_type: {{ encryption_default }}
+signing_key_path: "/data/{{ matrix_server_name }}.signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+{% if not federation_enabled %}
+federation_domain_whitelist: []
+{% endif %}
+report_stats: false
+app_service_config_files:
+{% if discord_bridge_registered | default(false) %}
+  - /data/discord-registration.yaml
+{% else %}
+  []
+{% endif %}

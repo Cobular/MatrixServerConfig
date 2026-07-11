@@ -1,0 +1,53 @@
+# roles/backups/tasks/main.yml
+# Encrypted Postgres/signing-key backups to Azure Blob, plus disk monitoring.
+# Everything here runs as root: the Synapse signing key is 991-owned/0600,
+# so an admin-user cron could never read it.
+
+- name: Create backup directory
+  file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: root
+    group: "{{ admin_user }}"
+    mode: "0750"
+
+- name: Create root rclone config directory
+  file:
+    path: /root/.config/rclone
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Template rclone config (Azure Blob via managed identity)
+  template:
+    src: rclone.conf.j2
+    dest: /root/.config/rclone/rclone.conf
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Template backup script
+  template:
+    src: backup.sh.j2
+    dest: "{{ matrix_base_dir }}/backup.sh"
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Schedule backup cron job
+  cron:
+    name: "matrix-postgres-backup"
+    job: "{{ matrix_base_dir }}/backup.sh 2>&1 | logger -t matrix-backup"
+    minute: "0"
+    hour: "*/6"
+    user: root
+
+- name: Schedule disk space monitoring
+  cron:
+    name: "matrix-disk-monitor"
+    job: >
+      df -h / | awk 'NR==2 && $5+0 > 80 {print "DISK WARNING: " $5 " used"}' | logger -t matrix-disk
+    minute: "30"
+    hour: "*/6"
+    user: root

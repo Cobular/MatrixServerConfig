@@ -1,0 +1,103 @@
+# roles/discord_bridge/tasks/main.yml
+# Sets up mautrix-discord bridge.
+#
+# Flow:
+#   1. Generate default config (gets us valid as_token / hs_token)
+#   2. Read the generated tokens (so our template preserves them)
+#   3. Template our config over the default (keeping tokens)
+#   4. Generate registration file (reads config, writes registration.yaml)
+#   5. Copy registration to Synapse, re-template homeserver.yaml
+#   6. Start the bridge
+
+- name: Create Discord bridge data directory
+  file:
+    path: "{{ matrix_base_dir }}/discord-data"
+    state: directory
+    owner: "1337"
+    group: "1337"
+    mode: "0755"
+
+# ── Step 1: Generate default config if needed ──
+- name: Check if bridge config exists
+  stat:
+    path: "{{ matrix_base_dir }}/discord-data/config.yaml"
+  register: bridge_config
+
+- name: Generate default bridge config
+  command: >
+    docker run --rm
+    -v {{ matrix_base_dir }}/discord-data:/data
+    dock.mau.dev/mautrix/discord:latest
+  when: not bridge_config.stat.exists
+  ignore_errors: true
+
+# ── Step 2: Read existing tokens ──
+# The auto-generated config has random as_token and hs_token.
+# We need to preserve these when we template our own config over it,
+# because registration.yaml must have matching tokens.
+- name: Read existing bridge config for tokens
+  slurp:
+    src: "{{ matrix_base_dir }}/discord-data/config.yaml"
+  register: existing_bridge_config
+
+- name: Parse bridge tokens from existing config
+  set_fact:
+    bridge_as_token: "{{ (existing_bridge_config.content | b64decode | from_yaml).appservice.as_token }}"
+    bridge_hs_token: "{{ (existing_bridge_config.content | b64decode | from_yaml).appservice.hs_token }}"
+
+# ── Step 3: Template our config (preserving tokens) ──
+- name: Template bridge config
+  template:
+    src: config.yaml.j2
+    dest: "{{ matrix_base_dir }}/discord-data/config.yaml"
+    owner: "1337"
+    group: "1337"
+    mode: "0640"
+  notify: restart discord bridge
+
+# ── Step 4: Generate registration if needed ──
+- name: Check if bridge registration exists
+  stat:
+    path: "{{ matrix_base_dir }}/discord-data/registration.yaml"
+  register: bridge_registration
+
+- name: Generate bridge registration
+  command: >
+    docker run --rm
+    -v {{ matrix_base_dir }}/discord-data:/data
+    dock.mau.dev/mautrix/discord:latest
+  when: not bridge_registration.stat.exists
+  ignore_errors: true
+
+# ── Step 5: Register bridge with Synapse ──
+- name: Copy bridge registration to Synapse
+  copy:
+    src: "{{ matrix_base_dir }}/discord-data/registration.yaml"
+    dest: "{{ matrix_base_dir }}/synapse-data/discord-registration.yaml"
+    remote_src: true
+    owner: "991"
+    group: "991"
+    mode: "0640"
+  register: registration_copied
+
+- name: Set bridge registered fact
+  set_fact:
+    discord_bridge_registered: true
+
+- name: Re-template homeserver.yaml with bridge registration
+  template:
+    src: "{{ role_path }}/../synapse/templates/homeserver.yaml.j2"
+    dest: "{{ matrix_base_dir }}/synapse-data/homeserver.yaml"
+    owner: "991"
+    group: "991"
+    mode: "0640"
+  notify: restart synapse after bridge
+
+# ── Step 6: Start everything ──
+- name: Start all services including bridge
+  command: docker compose up -d
+  args:
+    chdir: "{{ matrix_base_dir }}"
+  become_user: "{{ admin_user }}"
+  register: full_up
+  changed_when: "'Started' in full_up.stderr or 'Creating' in full_up.stderr"

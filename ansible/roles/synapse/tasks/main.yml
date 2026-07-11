@@ -1,0 +1,75 @@
+# roles/synapse/tasks/main.yml
+
+- name: Create Synapse subdirectories
+  file:
+    path: "{{ matrix_base_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0755"
+  loop:
+    - synapse-data
+    - postgres-data
+
+- name: Template docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ matrix_base_dir }}/docker-compose.yml"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0640"
+  notify: restart all services
+
+# Contains role passwords, and the postgres entrypoint reads it as uid 70
+# (alpine postgres) — so owned by 70, unreadable to everyone else.
+- name: Template Postgres init script
+  template:
+    src: init-db.sql.j2
+    dest: "{{ matrix_base_dir }}/init-db.sql"
+    owner: "70"
+    group: "70"
+    mode: "0600"
+
+# Signing key: only generated once. This is your server's permanent identity.
+- name: Check if Synapse signing key exists
+  stat:
+    path: "{{ matrix_base_dir }}/synapse-data/{{ matrix_server_name }}.signing.key"
+  register: signing_key
+
+- name: Generate Synapse config and signing key
+  command: >
+    docker run --rm
+    -v {{ matrix_base_dir }}/synapse-data:/data
+    -e SYNAPSE_SERVER_NAME={{ matrix_server_name }}
+    -e SYNAPSE_REPORT_STATS=no
+    matrixdotorg/synapse:latest generate
+  when: not signing_key.stat.exists
+  become_user: "{{ admin_user }}"
+
+# Template homeserver.yaml every run so config changes propagate.
+- name: Template homeserver.yaml
+  template:
+    src: homeserver.yaml.j2
+    dest: "{{ matrix_base_dir }}/synapse-data/homeserver.yaml"
+    owner: "991"
+    group: "991"
+    mode: "0640"
+  notify: restart synapse
+
+- name: Start Postgres and Synapse
+  command: docker compose up -d postgres synapse
+  args:
+    chdir: "{{ matrix_base_dir }}"
+  become_user: "{{ admin_user }}"
+  register: compose_up
+  changed_when: "'Started' in compose_up.stderr or 'Creating' in compose_up.stderr"
+
+- name: Wait for Synapse to become healthy
+  uri:
+    url: "http://localhost:8008/_matrix/client/versions"
+    method: GET
+    status_code: 200
+  register: synapse_health
+  retries: 30
+  delay: 5
+  until: synapse_health.status == 200

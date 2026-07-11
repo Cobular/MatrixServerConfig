@@ -1,0 +1,4 @@
+# Ansible vault password — keep a copy in your password manager.
+# Without it, vault.yml and every backup are unrecoverable.
+ansible/.vault-pass
+*.retry

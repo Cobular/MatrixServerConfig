@@ -1,0 +1,60 @@
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  Matrix Server Configuration                                ║
+# ║  Edit these values before running the playbook.             ║
+# ║  Secrets live in vault.yml (ansible-vault edit vault.yml).  ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+# ── Identity ──
+# server_name: Permanent homeserver identity. User IDs = @user:this-value.
+# YOU CANNOT CHANGE THIS LATER.
+matrix_server_name: "nasa.matrix.cobular.com"
+
+# hostname: FQDN where Caddy serves the client/federation API.
+# Needs DNS A record → VM IP.
+matrix_hostname: "nasa.matrix.cobular.com"
+
+# element_hostname: separate origin for Element Web (XSS containment —
+# never serve the client from the homeserver's domain).
+# Needs its own DNS A record → same VM IP.
+element_hostname: "element.cobular.com"
+
+# ── Credentials ──
+# Actual values are vaulted; these mappings keep templates readable.
+postgres_superuser_password: "{{ vault_postgres_superuser_password }}"
+postgres_synapse_password: "{{ vault_postgres_synapse_password }}"
+postgres_bridge_password: "{{ vault_postgres_bridge_password }}"
+registration_shared_secret: "{{ vault_registration_shared_secret }}"
+macaroon_secret_key: "{{ vault_macaroon_secret_key }}"
+form_secret: "{{ vault_form_secret }}"
+
+# ── System ──
+admin_user: "cobular"
+matrix_base_dir: "/home/{{ admin_user }}/matrix"
+
+# ── Synapse ──
+max_upload_size: "100M"
+encryption_default: "all"
+federation_enabled: true
+
+# ── Discord Bridge Backfill ──
+# -1 = all history, 0 = disabled, N = last N messages.
+# MUST be set before first bridge login.
+backfill_initial_dm: -1
+backfill_initial_channel: -1
+backfill_initial_thread: -1
+backfill_missed_dm: -1
+backfill_missed_channel: -1
+backfill_missed_thread: -1
+backfill_max_guild_members: -1
+
+# ── Backups ──
+# Dumps are age-encrypted locally, then shipped to Azure Blob via the VM's
+# managed identity. Blob retention (30 days) is a lifecycle policy in the
+# ARM template; local retention is below.
+backup_dir: "/home/{{ admin_user }}/backups"
+backup_retention_days: 7
+backup_storage_account: "cobularmatrixbackups"   # must match arm/matrix-infra.parameters.json
+backup_blob_container: "backups"
+# Public half of the backup encryption key. Private half:
+# vault_age_backup_private_key in vault.yml — needed to restore, guard it.
+backup_age_public_key: "age12p8qu7kgqfrz9pc5xw3j8c7ulgg0wkznjry3q7zjj8t6fxt6fegsuqm7hc"

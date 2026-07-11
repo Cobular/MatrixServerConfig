@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+# Azure Blob access via the VM's system-assigned managed identity.
+# No keys or SAS tokens — the VM's identity has Storage Blob Data
+# Contributor on the backup storage account (see arm/matrix-infra.json).
+[bk]
+type = azureblob
+account = {{ backup_storage_account }}
+use_msi = true

@@ -1,0 +1,55 @@
+# {{ ansible_managed }}
+# mautrix-discord bridge configuration.
+# Only essential settings are configured here; the bridge uses sensible defaults for everything else.
+
+homeserver:
+    address: http://synapse:8008
+    domain: {{ matrix_server_name }}
+    software: standard
+
+appservice:
+    address: http://mautrix-discord:29334
+    hostname: 0.0.0.0
+    port: 29334
+    database:
+        type: postgres
+        uri: postgres://bridge:{{ postgres_bridge_password }}@postgres/discord?sslmode=disable
+        max_open_conns: 20
+        max_idle_conns: 2
+    id: discord
+    bot:
+        username: discordbot
+        displayname: Discord Bridge Bot
+    as_token: "{{ bridge_as_token | default('generate_on_first_run') }}"
+    hs_token: "{{ bridge_hs_token | default('generate_on_first_run') }}"
+
+bridge:
+    {# The bridge expects literal Go-template placeholders like {{.}} —
+       the quoted-string Jinja expressions below emit them verbatim. #}
+    username_template: "discord_{{ '{{.}}' }}"
+    displayname_template: "{{ '{{.Username}}' }}"
+    portal_message_buffer: 128
+    delivery_receipts: true
+    permissions:
+        "{{ matrix_server_name }}": user
+        "@admin:{{ matrix_server_name }}": admin
+    backfill:
+        limits:
+            initial:
+                dm: {{ backfill_initial_dm }}
+                channel: {{ backfill_initial_channel }}
+                thread: {{ backfill_initial_thread }}
+            missed:
+                dm: {{ backfill_missed_dm }}
+                channel: {{ backfill_missed_channel }}
+                thread: {{ backfill_missed_thread }}
+        max_guild_members: {{ backfill_max_guild_members }}
+    encryption:
+        allow: true
+        default: true
+
+logging:
+    min_level: debug
+    writers:
+        - type: stdout
+          format: pretty-colored

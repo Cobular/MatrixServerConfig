@@ -1,0 +1,7 @@
+# roles/caddy/handlers/main.yml
+
+- name: restart caddy
+  command: docker compose restart caddy
+  args:
+    chdir: "{{ matrix_base_dir }}"
+  become_user: "{{ admin_user }}"

@@ -1,0 +1,8 @@
+-- {{ ansible_managed }}
+-- Runs once, on first Postgres initdb (empty data dir). Creates
+-- least-privilege roles: no service ever connects as the superuser.
+CREATE ROLE synapse LOGIN PASSWORD '{{ postgres_synapse_password }}';
+CREATE DATABASE synapse OWNER synapse ENCODING 'UTF8' LOCALE 'C' TEMPLATE template0;
+
+CREATE ROLE bridge LOGIN PASSWORD '{{ postgres_bridge_password }}';
+CREATE DATABASE discord OWNER bridge ENCODING 'UTF8' LOCALE 'C' TEMPLATE template0;

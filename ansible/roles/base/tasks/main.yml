@@ -1,0 +1,87 @@
+# roles/base/tasks/main.yml
+
+- name: Update apt cache
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install system packages
+  apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+      - python3-yaml
+      - python3-docker
+      - unattended-upgrades
+      - jq
+      - curl
+      - age      # backup encryption
+      - rclone   # backup upload to Azure Blob
+    state: present
+
+- name: Enable and start Docker
+  systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Add admin user to docker group
+  user:
+    name: "{{ admin_user }}"
+    groups: docker
+    append: true
+
+- name: Enable unattended security upgrades
+  copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    mode: "0644"
+
+# 4G swap: OOM insurance on a 4 GiB VM — Synapse + Postgres + the Discord
+# bridge's initial backfill can spike well past physical RAM.
+- name: Create swapfile
+  command: fallocate -l 4G /swapfile
+  args:
+    creates: /swapfile
+  register: swap_created
+
+- name: Secure swapfile permissions
+  file:
+    path: /swapfile
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Format swapfile
+  command: mkswap /swapfile
+  when: swap_created is changed
+
+- name: Enable swapfile
+  command: swapon /swapfile
+  when: swap_created is changed
+
+- name: Persist swapfile in fstab
+  lineinfile:
+    path: /etc/fstab
+    line: "/swapfile none swap sw 0 0"
+
+# unattended-upgrades only patches the host OS; containers need their own
+# update path. Weekly pull + up recreates only containers whose image moved.
+- name: Schedule weekly container image updates
+  cron:
+    name: "matrix-container-update"
+    user: "{{ admin_user }}"
+    weekday: "0"
+    hour: "4"
+    minute: "30"
+    job: "(cd {{ matrix_base_dir }} && docker compose pull -q && docker compose up -d && docker image prune -f) 2>&1 | logger -t matrix-update"
+
+- name: Create Matrix project directory
+  file:
+    path: "{{ matrix_base_dir }}"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0755"

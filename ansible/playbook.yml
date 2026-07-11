@@ -1,0 +1,41 @@
+- name: Deploy Matrix Synapse with Discord bridge
+  hosts: matrix
+  become: true
+
+  pre_tasks:
+    - name: Validate configuration
+      assert:
+        that:
+          - matrix_server_name != "yourdomain.com"
+          - matrix_hostname != "matrix.yourdomain.com"
+          - element_hostname != "element.yourdomain.com"
+          - vault_postgres_superuser_password is defined
+          - vault_postgres_synapse_password is defined
+          - vault_postgres_bridge_password is defined
+          - vault_registration_shared_secret is defined
+          - vault_age_backup_private_key is defined
+        fail_msg: "Edit group_vars/matrix/vars.yml and ensure vault.yml decrypts (see README, Secrets section)."
+
+  roles:
+    - base
+    - synapse
+    - caddy
+    - discord_bridge
+    - backups
+
+  post_tasks:
+    - name: Print next steps
+      debug:
+        msg: |
+          ═══════════════════════════════════════════════════
+           Deployment complete!
+           1. Point DNS: {{ matrix_hostname }} → {{ ansible_host }}
+                         {{ element_hostname }} → {{ ansible_host }}
+           2. Create admin:
+              ssh {{ admin_user }}@{{ ansible_host }}
+              cd ~/matrix && docker exec -it synapse \
+                register_new_matrix_user -c /data/homeserver.yaml \
+                -u admin -a http://localhost:8008
+           3. Log in at https://{{ element_hostname }}
+           4. DM @discordbot:{{ matrix_server_name }} to bridge Discord
+          ═══════════════════════════════════════════════════

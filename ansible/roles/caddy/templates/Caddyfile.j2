@@ -1,0 +1,47 @@
+# {{ ansible_managed }}
+# NOTE: reverse_proxy must live inside handle blocks. Caddy sorts the bare
+# `handle` directive ahead of `reverse_proxy`, so a top-level catch-all
+# handle+file_server would swallow /_matrix/* requests before they ever
+# reached Synapse. Sibling handle blocks are mutually exclusive and sorted
+# most-specific-path first, which gives the routing we want.
+
+# ── Homeserver API ──
+{{ matrix_hostname }} {
+    handle /_matrix/* {
+        reverse_proxy synapse:8008
+    }
+    # Client-facing Synapse endpoints only (password reset, SSO, etc).
+    # Deliberately NOT /_synapse/* — that would expose the admin API
+    # (/_synapse/admin) to the internet.
+    handle /_synapse/client/* {
+        reverse_proxy synapse:8008
+    }
+    # Client auto-discovery for third-party Matrix clients.
+    handle /.well-known/matrix/client {
+        header Content-Type application/json
+        header Access-Control-Allow-Origin *
+        respond `{"m.homeserver":{"base_url":"https://{{ matrix_hostname }}"}}`
+    }
+    # Everything else → Element, which lives on its own origin so
+    # user-uploaded content can never script against the client.
+    handle {
+        redir https://{{ element_hostname }}{uri}
+    }
+}
+
+# ── Element Web (separate origin from the homeserver) ──
+{{ element_hostname }} {
+    header {
+        X-Frame-Options SAMEORIGIN
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+    root * /srv/element
+    try_files {path} /index.html
+    file_server
+}
+
+# ── Federation ──
+{{ matrix_hostname }}:8448 {
+    reverse_proxy /_matrix/* synapse:8008
+}

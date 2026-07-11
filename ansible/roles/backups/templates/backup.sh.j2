@@ -1,0 +1,37 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Dumps Postgres + Synapse signing key, encrypts with age, ships to Azure
+# Blob (auth via the VM's managed identity — no credentials on disk).
+# Runs from root's cron so it can read the 991-owned signing key.
+#
+# Decryption key: vault_age_backup_private_key in ansible vault.
+# Blob retention (30 days) is a lifecycle policy on the storage account;
+# local retention is {{ backup_retention_days }} days.
+
+set -euo pipefail
+
+DATE=$(date +%Y%m%d-%H%M)
+BACKUP_DIR="{{ backup_dir }}"
+AGE_RECIPIENT="{{ backup_age_public_key }}"
+REMOTE="bk:{{ backup_blob_container }}"
+
+mkdir -p "$BACKUP_DIR"
+
+# All databases, with DROP statements so restores onto a fresh cluster work
+docker exec postgres pg_dumpall -U postgres --clean --if-exists \
+    | gzip \
+    | age -r "$AGE_RECIPIENT" \
+    > "$BACKUP_DIR/pg_${DATE}.sql.gz.age"
+
+# Signing key: tiny, irrecoverable if lost, so include it in every backup
+(cd "{{ matrix_base_dir }}/synapse-data" && tar czf - ./*.signing.key) \
+    | age -r "$AGE_RECIPIENT" \
+    > "$BACKUP_DIR/keys_${DATE}.tar.gz.age"
+
+# Ship offsite
+rclone copy "$BACKUP_DIR" "$REMOTE" --include "*_${DATE}.*.age"
+
+# Prune local copies; blob copies expire via lifecycle policy
+find "$BACKUP_DIR" -name "*.age" -mtime +{{ backup_retention_days }} -delete
+
+echo "[$(date)] Backup completed and uploaded: pg_${DATE}.sql.gz.age" >> "$BACKUP_DIR/backup.log"

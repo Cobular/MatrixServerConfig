@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": { "value": "cobular" },
+    "sshPublicKey": { "value": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINdZQ9iQeqJNUlq492pduIqHOxHlirkZB+2ah910ieFP" },
+    "location": { "value": "westus2" },
+    "vmSize": { "value": "Standard_B2s" },
+    "osDiskSizeGB": { "value": 256 },
+    "sshAllowedSourceIP": { "value": "172.58.114.44/32" },
+    "backupStorageAccountName": { "value": "cobularmatrixbackups" }
+  }
+}

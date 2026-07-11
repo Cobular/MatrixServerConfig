@@ -1,0 +1,13 @@
+# roles/discord_bridge/handlers/main.yml
+
+- name: restart discord bridge
+  command: docker compose restart mautrix-discord
+  args:
+    chdir: "{{ matrix_base_dir }}"
+  become_user: "{{ admin_user }}"
+
+- name: restart synapse after bridge
+  command: docker compose restart synapse
+  args:
+    chdir: "{{ matrix_base_dir }}"
+  become_user: "{{ admin_user }}"

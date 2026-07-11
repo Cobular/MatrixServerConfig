@@ -1,0 +1,79 @@
+# roles/caddy/tasks/main.yml
+
+- name: Create Caddy and Element directories
+  file:
+    path: "{{ matrix_base_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0755"
+  loop:
+    - caddy-data
+    - caddy-config
+    - element-web
+
+- name: Template Caddyfile
+  template:
+    src: Caddyfile.j2
+    dest: "{{ matrix_base_dir }}/Caddyfile"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+  notify: restart caddy
+
+- name: Get latest Element Web release tag
+  uri:
+    url: https://api.github.com/repos/element-hq/element-web/releases/latest
+    return_content: true
+  register: element_release
+
+- name: Set Element version fact
+  set_fact:
+    element_version: "{{ element_release.json.tag_name }}"
+
+- name: Check current Element version
+  stat:
+    path: "{{ matrix_base_dir }}/element-web/.element-version"
+  register: element_version_file
+
+- name: Read current Element version
+  slurp:
+    src: "{{ matrix_base_dir }}/element-web/.element-version"
+  register: current_element_version
+  when: element_version_file.stat.exists
+  ignore_errors: true
+
+- name: Download and extract Element Web
+  unarchive:
+    src: "https://github.com/element-hq/element-web/releases/download/{{ element_version }}/element-{{ element_version }}.tar.gz"
+    dest: "{{ matrix_base_dir }}/element-web"
+    remote_src: true
+    extra_opts: ["--strip-components=1"]
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: >
+    not element_version_file.stat.exists or
+    (current_element_version.content | default('') | b64decode | trim) != element_version
+
+- name: Write Element version marker
+  copy:
+    content: "{{ element_version }}"
+    dest: "{{ matrix_base_dir }}/element-web/.element-version"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+
+- name: Template Element Web config
+  template:
+    src: element-config.json.j2
+    dest: "{{ matrix_base_dir }}/element-web/config.json"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+
+- name: Start Caddy
+  command: docker compose up -d caddy
+  args:
+    chdir: "{{ matrix_base_dir }}"
+  become_user: "{{ admin_user }}"
+  register: caddy_up
+  changed_when: "'Started' in caddy_up.stderr or 'Creating' in caddy_up.stderr"
