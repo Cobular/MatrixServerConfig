@@ -7,13 +7,16 @@ services:
     # backfill_mode sizes Postgres for bulk ingest on the up-specced VM
     # (see RUNBOOK.md). synchronous_commit=off trades crash-safety of the
     # last few seconds for ingest speed — acceptable only during backfill.
-    command: >-
-      postgres
-      -c shared_buffers={{ '2GB' if backfill_mode else '256MB' }}
-      -c max_wal_size={{ '4GB' if backfill_mode else '1GB' }}
-      {%- if backfill_mode %}
-      -c synchronous_commit=off
-      {%- endif %}
+    command:
+      - postgres
+      - "-c"
+      - "shared_buffers={{ '2GB' if backfill_mode else '256MB' }}"
+      - "-c"
+      - "max_wal_size={{ '4GB' if backfill_mode else '1GB' }}"
+{% if backfill_mode %}
+      - "-c"
+      - "synchronous_commit=off"
+{% endif %}
     environment:
       # Superuser stays 'postgres' and is only used for admin/backups.
       # Services connect as least-privilege roles created by init-db.sql.

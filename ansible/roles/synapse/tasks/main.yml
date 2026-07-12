@@ -1,15 +1,24 @@
 # roles/synapse/tasks/main.yml
 
-- name: Create Synapse subdirectories
+# The containers run as their own UIDs, not the admin user. Synapse (UID 991)
+# creates media_store and writes into /data; Postgres (UID 70, alpine) owns
+# its PGDATA. Owning these dirs as admin_user makes the containers fail with
+# EACCES — and fights the chown the synapse image does during 'generate'.
+- name: Create Synapse data directory
   file:
-    path: "{{ matrix_base_dir }}/{{ item }}"
+    path: "{{ matrix_base_dir }}/synapse-data"
     state: directory
-    owner: "{{ admin_user }}"
-    group: "{{ admin_user }}"
-    mode: "0755"
-  loop:
-    - synapse-data
-    - postgres-data
+    owner: "991"
+    group: "991"
+    mode: "0700"
+
+- name: Create Postgres data directory
+  file:
+    path: "{{ matrix_base_dir }}/postgres-data"
+    state: directory
+    owner: "70"
+    group: "70"
+    mode: "0700"
 
 - name: Template docker-compose.yml
   template:
@@ -64,12 +73,14 @@
   register: compose_up
   changed_when: "'Started' in compose_up.stderr or 'Creating' in compose_up.stderr"
 
+# Synapse listens on 8008 only inside the container network — it has no
+# host port mapping (only Caddy publishes ports). So probe from inside the
+# container rather than the host, which has nothing on 8008.
 - name: Wait for Synapse to become healthy
-  uri:
-    url: "http://localhost:8008/_matrix/client/versions"
-    method: GET
-    status_code: 200
+  command: docker exec synapse curl -sf -o /dev/null http://localhost:8008/_matrix/client/versions
   register: synapse_health
   retries: 30
   delay: 5
-  until: synapse_health.status == 200
+  until: synapse_health.rc == 0
+  changed_when: false
+  become_user: "{{ admin_user }}"

@@ -7,7 +7,7 @@
     "location": { "value": "westus2" },
     "vmSize": { "value": "Standard_B2s" },
     "osDiskSizeGB": { "value": 256 },
-    "sshAllowedSourceIP": { "value": "172.58.114.44/32" },
+    "sshAllowedSourceIP": { "value": "72.199.158.189/32" },
     "backupStorageAccountName": { "value": "cobularmatrixbackups" }
   }
 }
