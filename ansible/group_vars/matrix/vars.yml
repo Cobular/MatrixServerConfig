@@ -31,6 +31,26 @@ form_secret: "{{ vault_form_secret }}"
 admin_user: "cobular"
 matrix_base_dir: "/home/{{ admin_user }}/matrix"
 
+# ── Container images ──
+# Pinned so every upgrade is a reviewable line in git. Renovate (renovate.json
+# at the repo root) proposes bumps via PR. Postgres/Caddy minor+patch auto-merge;
+# Synapse and the bridge are assigned to you and never auto-merge, because they
+# run DB-schema / config migrations on startup — read the release notes and take
+# a backup before merging. Values below are what was live on 2026-07-11; keep
+# them at-or-ahead of the running server (a pin BEHIND live downgrades Synapse
+# onto a newer schema on the next configure → crash). The `# renovate:` comment
+# on each line is load-bearing (Renovate's custom manager reads it) — keep it.
+# renovate: datasource=docker depName=postgres
+postgres_image: "postgres:16.14-alpine"
+# renovate: datasource=docker depName=caddy
+caddy_image: "caddy:2.11.4-alpine"
+# renovate: datasource=docker depName=matrixdotorg/synapse
+synapse_image: "matrixdotorg/synapse:v1.156.0"
+# mautrix publishes a rolling :latest dev build (no semver release tags for the
+# current build) — Renovate pins & bumps its digest instead of a version.
+# renovate: datasource=docker depName=dock.mau.dev/mautrix/discord
+discord_image: "dock.mau.dev/mautrix/discord:latest"
+
 # ── Synapse ──
 max_upload_size: "100M"
 encryption_default: "all"

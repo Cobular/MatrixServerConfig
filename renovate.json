@@ -1,0 +1,61 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommitsDisabled"
+  ],
+  "dependencyDashboard": true,
+  "customManagers": [
+    {
+      "description": "Read the container image pins out of the Ansible vars file (they live in a Jinja template chain, so the built-in docker manager can't see them).",
+      "customType": "regex",
+      "fileMatch": ["^ansible/group_vars/matrix/vars\\.yml$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+\\w+_image:\\s*\"(?<currentValue>[^\"@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\""
+      ],
+      "datasourceTemplate": "{{{datasource}}}",
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "SAFE TIER — Postgres/Caddy minor+patch auto-merge, grouped into one weekly PR. No migrations at this level.",
+      "matchDepNames": ["postgres", "caddy"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "container images (safe)",
+      "schedule": ["before 6am on monday"],
+      "automerge": true
+    },
+    {
+      "description": "SAFE TIER — Ansible Galaxy collections minor+patch auto-merge.",
+      "matchManagers": ["ansible-galaxy"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "ansible collections",
+      "schedule": ["before 6am on monday"],
+      "automerge": true
+    },
+    {
+      "description": "PING TIER — Postgres/Caddy MAJOR (Postgres needs pg_upgrade; Caddy v3 is a breaking rewrite). Assign to you, never auto-merge.",
+      "matchDepNames": ["postgres", "caddy"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "assignees": ["Cobular"],
+      "addLabels": ["needs-migration"]
+    },
+    {
+      "description": "PING TIER — Synapse runs DB-schema migrations on boot (often one-way). Assign to you, never auto-merge; back up and read release notes first.",
+      "matchDepNames": ["matrixdotorg/synapse"],
+      "automerge": false,
+      "assignees": ["Cobular"],
+      "addLabels": ["needs-migration"]
+    },
+    {
+      "description": "PING TIER — mautrix-discord tracks rolling :latest by digest; bridge updates can carry DB/config migrations. Assign to you, never auto-merge.",
+      "matchDepNames": ["dock.mau.dev/mautrix/discord"],
+      "pinDigests": true,
+      "automerge": false,
+      "assignees": ["Cobular"],
+      "addLabels": ["needs-migration"]
+    }
+  ]
+}

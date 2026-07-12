@@ -51,7 +51,7 @@
     -v {{ matrix_base_dir }}/synapse-data:/data
     -e SYNAPSE_SERVER_NAME={{ matrix_server_name }}
     -e SYNAPSE_REPORT_STATS=no
-    matrixdotorg/synapse:latest generate
+    {{ synapse_image }} generate
   when: not signing_key.stat.exists
   become_user: "{{ admin_user }}"
 
