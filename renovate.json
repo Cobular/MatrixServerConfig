@@ -9,9 +9,9 @@
     {
       "description": "Read the container image pins out of the Ansible vars file (they live in a Jinja template chain, so the built-in docker manager can't see them).",
       "customType": "regex",
-      "fileMatch": ["^ansible/group_vars/matrix/vars\\.yml$"],
+      "managerFilePatterns": ["/^ansible/group_vars/matrix/vars\\.yml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+\\w+_image:\\s*\"(?<currentValue>[^\"@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\""
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+\\w+_image:\\s*\"[^\"@]*:(?<currentValue>[^\"@:]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\""
       ],
       "datasourceTemplate": "{{{datasource}}}",
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}"

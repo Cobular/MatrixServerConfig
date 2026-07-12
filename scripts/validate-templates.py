@@ -38,10 +38,14 @@ JSON_TEMPLATES = [
 ]
 
 # The exact regex Renovate's custom manager uses (keep in sync with renovate.json).
+# currentValue must capture ONLY the tag (e.g. "16.14-alpine"), not the whole
+# "repo:tag" — otherwise Renovate rejects it as an unversioned value and silently
+# skips the dependency. That's why the image name is consumed by a non-capturing
+# `[^"@]*:` before the currentValue group.
 RENOVATE_REGEX = (
     r'# renovate: datasource=(?P<datasource>\S+) depName=(?P<depName>\S+)'
     r'(?: versioning=(?P<versioning>\S+))?\s+\w+_image:\s*'
-    r'"(?P<currentValue>[^"@]+)(?:@(?P<currentDigest>sha256:[a-f0-9]+))?"'
+    r'"[^"@]*:(?P<currentValue>[^"@:]+)(?:@(?P<currentDigest>sha256:[a-f0-9]+))?"'
 )
 EXPECTED_PINS = 4
 
@@ -107,6 +111,19 @@ def main():
         )
     else:
         print(f"  ok  Renovate regex matches all {EXPECTED_PINS} image pins")
+
+    # currentValue must be a bare tag. If it still contains '/' or ':' it's the
+    # whole "repo:tag" ref, which Renovate rejects as invalid-value and skips
+    # (the bug that made the first Renovate run produce zero updates).
+    for m in pins:
+        tag = m.group("currentValue")
+        if "/" in tag or ":" in tag:
+            failures.append(
+                f"Renovate currentValue for {m.group('depName')} is '{tag}' — "
+                f"expected a bare tag, not a repo:tag ref (Renovate would skip it)."
+            )
+        else:
+            print(f"  ok  {m.group('depName')} → tag '{tag}'")
 
     if failures:
         print("\nFAILED:", file=sys.stderr)
