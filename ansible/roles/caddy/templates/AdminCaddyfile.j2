@@ -15,6 +15,12 @@
     handle /_synapse/* {
         reverse_proxy synapse:8008
     }
+    # Runtime configuration must not remain stale after an Ansible deploy.
+    handle /config.json {
+        reverse_proxy synapse-admin:8080 {
+            header_down Cache-Control "no-store"
+        }
+    }
     # The etkecc synapse-admin image serves on 8080 (its EXPOSE 80 is stale);
     # its own healthcheck hits localhost:8080/health. Proxy to 8080, not 80.
     handle {

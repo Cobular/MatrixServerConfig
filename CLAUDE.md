@@ -14,6 +14,16 @@ Read `RUNBOOK.md` before touching anything operational — it holds the current
 server state, the backfill up-spec/down-spec procedure, and break-glass access.
 `README.md` is the from-scratch setup guide.
 
+## Production safety rule
+
+**Never run a deployment or make an operational change without clear, explicit
+permission from the user for that specific action.** In particular, do not run
+any `deploy.sh` mode, a non-check-mode Ansible playbook, or a command that
+creates, updates, restarts, resizes, or deletes live infrastructure or services
+on your own. Editing and validating repository files does not grant deployment
+permission. Present the proposed operational command and wait for approval;
+do not infer approval from a request to investigate, diagnose, or edit code.
+
 ## Commands
 
 Everything goes through `deploy.sh` (from the repo root):

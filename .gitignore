@@ -2,3 +2,4 @@
 # Without it, vault.yml and every backup are unrecoverable.
 ansible/.vault-pass
 *.retry
+.venv/
