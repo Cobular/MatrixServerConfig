@@ -75,8 +75,8 @@ services:
     networks:
       - matrix
 
-  # synapse-admin: static web admin panel (user management + registration tokens).
-  # No published ports — only caddy-admin reaches it, on the container network.
+  # Ketesa admin frontend. Keep the legacy service name to avoid needless
+  # container/network migration; only caddy-admin reaches it.
   synapse-admin:
     image: {{ synapse_admin_image }}
     container_name: synapse-admin

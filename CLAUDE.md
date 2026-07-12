@@ -121,7 +121,7 @@ Container image versions are **pinned** as `*_image` vars in
 `discord_image`, `synapse_admin_image`) and threaded into `docker-compose.yml.j2`
 and the two `docker run` tasks (`synapse generate`, bridge config/registration
 gen). There are no more `:latest`/floating tags in the templates — change a
-version by editing the var, not the template. synapse-admin ships only a rolling
+version by editing the var, not the template. Ketesa ships only a rolling
 `:latest` (no semver tags), so it's pinned by `@sha256:` **digest** instead, which
 Renovate bumps. mautrix-discord is on a semver release tag (`:vX.Y.Z`) tracked like
 any other image — it was formerly on the rolling `:latest` dev build, digest-pinned,
@@ -137,7 +137,7 @@ image value as `repo:tag` so the manager captures a bare tag (a whole `repo:tag`
 in `currentValue` makes Renovate skip the dep as `invalid-value`). Two tiers:
 
 - **Safe (auto-merge, grouped weekly):** Postgres/Caddy minor+patch, Ansible
-  Galaxy collection minor+patch, and synapse-admin digest (static admin frontend,
+  Galaxy collection minor+patch, and Ketesa digest (static admin frontend,
   no migrations). Merged without review once CI is green.
 - **Ping (PR assigned to `Cobular`, `needs-migration` label, never auto-merge):**
   Synapse (runs one-way DB-schema migrations on boot), mautrix-discord (semver

@@ -96,7 +96,7 @@ def main():
                     if expected_config_mount not in admin_volumes:
                         raise ValueError(
                             "synapse-admin config must mount at "
-                            "/var/public/config.json for the etke image"
+                            "/var/public/config.json for Ketesa"
                         )
             except Exception as e:  # noqa: BLE001 - report, don't crash
                 failures.append(f"{rel} (backfill_mode={bf}): {type(e).__name__}: {e}")

@@ -65,8 +65,8 @@
       "addLabels": ["needs-migration"]
     },
     {
-      "description": "SAFE TIER — synapse-admin is a Tailscale-only static admin frontend (no server-side migrations). Digest-pin its rolling :latest and auto-merge weekly.",
-      "matchDepNames": ["ghcr.io/etkecc/synapse-admin"],
+      "description": "SAFE TIER — Ketesa is a Tailscale-only static admin frontend (no server-side migrations). Digest-pin its rolling :latest and auto-merge weekly.",
+      "matchDepNames": ["ghcr.io/etkecc/ketesa"],
       "pinDigests": true,
       "groupName": "container images (safe)",
       "schedule": ["before 6am on monday"],
