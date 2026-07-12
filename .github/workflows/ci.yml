@@ -1,0 +1,43 @@
+name: CI
+
+# Static validation of the Ansible/Jinja config on every PR (including
+# Renovate's) and on pushes to main. Everything here is OFFLINE and vault-free:
+# it never touches the live server and never needs the vault password, so it is
+# safe on a public repo. Runtime correctness (does the deploy actually apply,
+# do Synapse's schema migrations complete) is still verified by running
+# ./deploy.sh configure against the real host — see CLAUDE.md.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  templates:
+    name: Render + parse templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install jinja2 pyyaml
+      - name: Validate Jinja templates render to valid YAML/JSON
+        run: python scripts/validate-templates.py
+
+  yamllint:
+    name: yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install yamllint
+        run: pip install yamllint
+      - name: Lint YAML
+        run: yamllint -c .yamllint.yml .

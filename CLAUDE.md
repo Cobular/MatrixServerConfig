@@ -46,6 +46,16 @@ There is no local Python with jinja2 on PATH. To validate template rendering
 offline, use Ansible's pipx venv interpreter:
 `/Users/cobular/.local/pipx/venvs/ansible/bin/python`.
 
+Static checks (offline, vault-free — the same ones CI runs; see "Dependency
+updates & CI" below). Run before every deploy:
+
+```bash
+python scripts/validate-templates.py   # render every YAML/JSON *.j2 (both
+                                        # backfill_mode states) → parse; also
+                                        # verifies the Renovate image-pin regex
+yamllint -c .yamllint.yml .             # lint plain YAML (skips vault.yml, *.j2)
+```
+
 The VM is reached over **Tailscale** at `100.97.163.84` (see `inventory.ini`);
 `ssh cobular@100.97.163.84` works directly. The public IP still exists but SSH
 to it is NSG-allowlisted to a single, CGNAT-rotating source IP.
@@ -64,7 +74,10 @@ Two independently re-runnable phases, orchestrated by `deploy.sh`:
 2. **`ansible/playbook.yml`** — five roles, run in this order, each layering
    onto `~/matrix` on the VM:
    - **base** — Docker, packages, 4G swap, unattended-upgrades, weekly
-     container-image-pull cron, the `~/matrix` project dir.
+     container-image-pull cron, the `~/matrix` project dir. The cron pulls only
+     the **pinned** image tags now (see "Dependency updates & CI"), so it no
+     longer jumps versions silently — a version bump reaches the server only
+     when a re-templated `docker-compose.yml` lands via `./deploy.sh configure`.
    - **synapse** — templates `docker-compose.yml`, runs `synapse generate` once
      (creates the permanent signing key), brings up Postgres + Synapse.
    - **caddy** — downloads the latest Element Web release, templates the
@@ -91,6 +104,46 @@ resize — full procedure in `RUNBOOK.md` Phases 2/5. It threads through
 `docker-compose.yml.j2` and the bridge config, so changing it touches multiple
 templates' behavior at once.
 
+### Dependency updates & CI
+
+Container image versions are **pinned** as `*_image` vars in
+`group_vars/matrix/vars.yml` (`postgres_image`, `caddy_image`, `synapse_image`,
+`discord_image`) and threaded into `docker-compose.yml.j2` and the two
+`docker run` tasks (`synapse generate`, bridge config/registration gen). There
+are no more `:latest`/floating tags in the templates — change a version by
+editing the var, not the template.
+
+`renovate.json` (repo root) drives updates via the hosted **Mend Renovate**
+GitHub App. A regex custom manager reads the `# renovate:` annotation comment
+above each `*_image` line — that comment is load-bearing; keep it. Two tiers:
+
+- **Safe (auto-merge, grouped weekly):** Postgres/Caddy minor+patch, Ansible
+  Galaxy collections. Merged without review once CI is green.
+- **Ping (PR assigned to `Cobular`, `needs-migration` label, never auto-merge):**
+  Synapse (runs one-way DB-schema migrations on boot), mautrix-discord (rolling
+  `:latest`, digest-pinned by Renovate; bridge updates can carry DB/config
+  migrations), and any **major** Postgres/Caddy bump. Read notes + take a backup,
+  then merge, then `./deploy.sh configure`.
+
+**Merging a Renovate PR is not a deploy** — it only changes the pin in git. The
+version reaches the server on the next `configure`. Deploys stay deliberate by
+design (no GitOps auto-apply: it would push Synapse/bridge migrations unattended
+and hand CI standing prod + vault access). A pinned version must stay
+**at-or-ahead of what's live** — a pin *behind* the running server downgrades
+Synapse onto a newer DB schema on the next `configure` and crash-loops it. To
+read live versions: `ssh cobular@100.97.163.84 'docker exec synapse curl -sf
+localhost:8008/_synapse/admin/v1/server_version'`.
+
+`.github/workflows/ci.yml` runs `scripts/validate-templates.py` + `yamllint` on
+every PR (Renovate's included) and on pushes to main. Both are offline and
+vault-free — they never touch the server or need the vault password, so they're
+safe on this public repo. They also gate Renovate auto-merge (it waits for green
+checks). `--syntax-check`/`ansible-lint` are intentionally **not** in CI: they
+must decrypt `vault.yml`, which would require putting `.vault-pass` in Actions
+secrets. CI validates *static* correctness only; that a deploy actually applies
+(e.g. a Synapse schema migration completes) is still verified by running
+`configure` against the real host, with the 6-hourly backups as the net.
+
 ## Landmines specific to this repo
 
 **Container UIDs own their data dirs, not the admin user.** Synapse runs as UID
@@ -109,8 +162,10 @@ leading whitespace that corrupted the next YAML line's indentation. Rules that
 hold here: keep `{% ... %}` and `{# ... #}` at column 0, prefer explicit YAML
 lists over folded scalars for anything with conditionals, and after editing any
 `*.j2` under `roles/*/templates/`, render it through jinja2 (`trim_blocks=True`)
-+ `yaml.safe_load` before deploying. `ansible.cfg` sets `result_format = yaml`,
-and Ansible renders templates with `trim_blocks=True`.
++ `yaml.safe_load` before deploying — `scripts/validate-templates.py` does
+exactly this for every YAML/JSON template in both `backfill_mode` states, and CI
+runs it on every PR. `ansible.cfg` sets `result_format = yaml`, and Ansible
+renders templates with `trim_blocks=True`.
 
 **Least-privilege Postgres.** `init-db.sql.j2` runs once on first initdb and
 creates `synapse`/`bridge` login roles owning their own databases. Services

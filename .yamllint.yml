@@ -1,0 +1,20 @@
+# Lint the plain YAML (playbooks, roles, group_vars) for real structural
+# problems, not cosmetics. Jinja templates (*.j2) aren't valid YAML and are
+# validated separately by scripts/validate-templates.py. vault.yml is an
+# encrypted blob and must not be parsed.
+extends: relaxed
+
+rules:
+  line-length: disable
+  document-start: disable
+  comments-indentation: disable
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    check-keys: false
+  empty-lines:
+    max: 2
+
+ignore: |
+  ansible/group_vars/matrix/vault.yml
+  *.j2
