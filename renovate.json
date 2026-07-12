@@ -58,9 +58,8 @@
       "addLabels": ["needs-migration"]
     },
     {
-      "description": "PING TIER — mautrix-discord tracks rolling :latest by digest; bridge updates can carry DB/config migrations. Assign to you, never auto-merge.",
+      "description": "PING TIER — mautrix-discord on a semver release tag; bridge updates can carry DB/config migrations. Assign to you, never auto-merge.",
       "matchDepNames": ["dock.mau.dev/mautrix/discord"],
-      "pinDigests": true,
       "automerge": false,
       "assignees": ["Cobular"],
       "addLabels": ["needs-migration"]

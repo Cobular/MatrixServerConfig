@@ -51,10 +51,11 @@ postgres_image: "postgres:16.14-alpine"
 caddy_image: "caddy:2.11.4-alpine"
 # renovate: datasource=docker depName=matrixdotorg/synapse
 synapse_image: "matrixdotorg/synapse:v1.156.0"
-# mautrix publishes a rolling :latest dev build (no semver release tags for the
-# current build) — Renovate pins & bumps its digest instead of a version.
+# On a normal release tag (not the rolling :latest dev build) — Renovate tracks
+# it by semver like Synapse. Ping tier: bridge upgrades can carry DB/config
+# migrations, so read notes + back up before merging a bump.
 # renovate: datasource=docker depName=dock.mau.dev/mautrix/discord
-discord_image: "dock.mau.dev/mautrix/discord:latest"
+discord_image: "dock.mau.dev/mautrix/discord:v0.7.6"
 # synapse-admin ships a rolling :latest (its version label is literally "latest"),
 # so — like the bridge — Renovate pins & bumps the digest rather than a tag.
 # renovate: datasource=docker depName=ghcr.io/etkecc/synapse-admin

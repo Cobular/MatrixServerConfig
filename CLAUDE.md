@@ -111,9 +111,11 @@ Container image versions are **pinned** as `*_image` vars in
 `discord_image`, `synapse_admin_image`) and threaded into `docker-compose.yml.j2`
 and the two `docker run` tasks (`synapse generate`, bridge config/registration
 gen). There are no more `:latest`/floating tags in the templates — change a
-version by editing the var, not the template. Rolling `:latest` images that have
-no semver tags (mautrix-discord, synapse-admin) are pinned by `@sha256:` **digest**
-instead, which Renovate bumps. Ansible Galaxy collections in `requirements.yml`
+version by editing the var, not the template. synapse-admin ships only a rolling
+`:latest` (no semver tags), so it's pinned by `@sha256:` **digest** instead, which
+Renovate bumps. mautrix-discord is on a semver release tag (`:vX.Y.Z`) tracked like
+any other image — it was formerly on the rolling `:latest` dev build, digest-pinned,
+until a release caught up to what was running. Ansible Galaxy collections in `requirements.yml`
 are likewise pinned to **exact** versions, never an open `>=` range — an open
 range reads as permanently satisfied, so Renovate would never bump it (silent
 drift).
@@ -128,8 +130,8 @@ in `currentValue` makes Renovate skip the dep as `invalid-value`). Two tiers:
   Galaxy collection minor+patch, and synapse-admin digest (static admin frontend,
   no migrations). Merged without review once CI is green.
 - **Ping (PR assigned to `Cobular`, `needs-migration` label, never auto-merge):**
-  Synapse (runs one-way DB-schema migrations on boot), mautrix-discord (rolling
-  `:latest`, digest-pinned; bridge updates can carry DB/config migrations), and
+  Synapse (runs one-way DB-schema migrations on boot), mautrix-discord (semver
+  release tag; bridge updates can carry DB/config migrations), and
   any **major** bump (Postgres, Caddy, or a collection). Read notes + take a
   backup, then merge, then `./deploy.sh configure`.
 
