@@ -41,7 +41,7 @@ matrix_base_dir: "/home/{{ admin_user }}/matrix"
 # onto a newer schema on the next configure → crash). The `# renovate:` comment
 # on each line is load-bearing (Renovate's custom manager reads it) — keep it.
 # renovate: datasource=docker depName=postgres
-postgres_image: "postgres:16.14-alpine"
+postgres_image: "postgres:18.4-alpine"
 # renovate: datasource=docker depName=caddy
 caddy_image: "caddy:2.11.4-alpine"
 # renovate: datasource=docker depName=matrixdotorg/synapse
