@@ -49,6 +49,11 @@ bridge:
     encryption:
         allow: true
         default: true
+        # Let the bridge forward its own megolm keys to room members on request,
+        # so friends who sign up after backfill can decrypt pre-join history.
+        # Keep this on permanently: it gates the bridge answering key requests,
+        # and new/reinstalled clients need it every time they re-request keys.
+        allow_key_sharing: true
 
 logging:
     min_level: debug

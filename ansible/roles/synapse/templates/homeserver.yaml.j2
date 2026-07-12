@@ -31,7 +31,10 @@ form_secret: "{{ form_secret }}"
 log_config: "/data/{{ matrix_server_name }}.log.config"
 media_store_path: /data/media_store
 max_upload_size: "{{ max_upload_size }}"
-enable_registration: false
+# Open registration, but only with an admin-minted token (invite-only signup).
+# Mint tokens via the admin API: POST /_synapse/admin/v1/registration_tokens/new
+enable_registration: true
+registration_requires_token: true
 enable_registration_without_verification: false
 encryption_enabled_by_default_for_room_type: {{ encryption_default }}
 signing_key_path: "/data/{{ matrix_server_name }}.signing.key"
