@@ -24,8 +24,10 @@ appservice:
     hs_token: "{{ bridge_hs_token | default('generate_on_first_run') }}"
 
 bridge:
-    {# The bridge expects literal Go-template placeholders like {{.}} —
-       the quoted-string Jinja expressions below emit them verbatim. #}
+{# The bridge expects literal Go-template placeholders like {{.}} —
+   the quoted-string Jinja expressions below emit them verbatim.
+   This comment must stay at column 0: indenting it leaves orphaned
+   whitespace that corrupts the next line's YAML indentation. #}
     username_template: "discord_{{ '{{.}}' }}"
     displayname_template: "{{ '{{.Username}}' }}"
     portal_message_buffer: 128
