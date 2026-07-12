@@ -1,6 +1,7 @@
 - name: Deploy Matrix Synapse with Discord bridge
   hosts: matrix
   become: true
+  gather_facts: false
 
   pre_tasks:
     - name: Validate configuration

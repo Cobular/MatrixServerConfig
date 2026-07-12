@@ -78,7 +78,7 @@ cmd_configure() {
 
     echo "Installing Ansible Galaxy dependencies..."
     cd "$ANSIBLE_DIR"
-    ansible-galaxy install -r requirements.yml --force
+    ansible-galaxy collection install -r requirements.yml
 
     echo ""
     echo "Running playbook..."

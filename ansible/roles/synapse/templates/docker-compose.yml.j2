@@ -82,7 +82,7 @@ services:
     container_name: synapse-admin
     restart: unless-stopped
     volumes:
-      - ./synapse-admin/config.json:/app/config.json:ro
+      - ./synapse-admin/config.json:/var/public/config.json:ro
     networks:
       - matrix
 

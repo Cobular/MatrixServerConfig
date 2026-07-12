@@ -30,12 +30,14 @@
     name: "{{ admin_user }}"
     groups: docker
     append: true
+  register: docker_group_membership
 
 # Group membership only applies to new login sessions. Drop the persistent
 # SSH connection so later docker tasks running as {{ admin_user }} see it —
 # otherwise the first-ever run fails at "Generate Synapse config".
 - name: Reset connection so docker group membership takes effect
   meta: reset_connection
+  when: docker_group_membership is changed
 
 - name: Enable unattended security upgrades
   copy:

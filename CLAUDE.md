@@ -49,7 +49,7 @@ ansible-playbook -i inventory.ini playbook.yml --check --diff   # dry run
 ansible-playbook -i inventory.ini playbook.yml --tags synapse   # (no tags defined yet; roles run in order)
 ansible-vault view group_vars/matrix/vault.yml                  # inspect secrets
 ansible-vault edit group_vars/matrix/vault.yml                  # rotate secrets
-ansible-galaxy install -r requirements.yml --force              # deps (deploy.sh does this)
+ansible-galaxy collection install -r requirements.yml           # deps (deploy.sh does this)
 ```
 
 There is no local Python with jinja2 on PATH. To validate template rendering

@@ -87,7 +87,17 @@ def main():
         for bf in (True, False):
             try:
                 out = render(rel, bf, fixture)
-                yaml.safe_load(out)
+                parsed = yaml.safe_load(out)
+                if rel == "roles/synapse/templates/docker-compose.yml.j2":
+                    admin_volumes = parsed["services"]["synapse-admin"]["volumes"]
+                    expected_config_mount = (
+                        "./synapse-admin/config.json:/var/public/config.json:ro"
+                    )
+                    if expected_config_mount not in admin_volumes:
+                        raise ValueError(
+                            "synapse-admin config must mount at "
+                            "/var/public/config.json for the etke image"
+                        )
             except Exception as e:  # noqa: BLE001 - report, don't crash
                 failures.append(f"{rel} (backfill_mode={bf}): {type(e).__name__}: {e}")
             else:
