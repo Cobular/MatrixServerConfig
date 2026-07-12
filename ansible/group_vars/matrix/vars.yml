@@ -31,6 +31,11 @@ form_secret: "{{ vault_form_secret }}"
 admin_user: "cobular"
 matrix_base_dir: "/home/{{ admin_user }}/matrix"
 
+# Tailscale IP of the VM. The admin panel (caddy-admin) publishes its port bound
+# to THIS address only, so it is reachable over the tailnet but never on the
+# public IP. If the node's Tailscale IP ever changes, update this and inventory.
+tailscale_ip: "100.97.163.84"
+
 # ── Container images ──
 # Pinned so every upgrade is a reviewable line in git. Renovate (renovate.json
 # at the repo root) proposes bumps via PR. Postgres/Caddy minor+patch auto-merge;
@@ -50,6 +55,10 @@ synapse_image: "matrixdotorg/synapse:v1.156.0"
 # current build) — Renovate pins & bumps its digest instead of a version.
 # renovate: datasource=docker depName=dock.mau.dev/mautrix/discord
 discord_image: "dock.mau.dev/mautrix/discord:latest"
+# synapse-admin ships a rolling :latest (its version label is literally "latest"),
+# so — like the bridge — Renovate pins & bumps the digest rather than a tag.
+# renovate: datasource=docker depName=ghcr.io/etkecc/synapse-admin
+synapse_admin_image: "ghcr.io/etkecc/synapse-admin:latest@sha256:ce1eaf7d890f44c0e40896dcbee9e560484a5b6953ffd3deaf2ecc625a74dc25"
 
 # ── Synapse ──
 max_upload_size: "100M"

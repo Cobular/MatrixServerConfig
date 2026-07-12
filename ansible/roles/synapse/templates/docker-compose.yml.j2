@@ -75,6 +75,35 @@ services:
     networks:
       - matrix
 
+  # synapse-admin: static web admin panel (user management + registration tokens).
+  # No published ports — only caddy-admin reaches it, on the container network.
+  synapse-admin:
+    image: {{ synapse_admin_image }}
+    container_name: synapse-admin
+    restart: unless-stopped
+    volumes:
+      - ./synapse-admin/config.json:/app/config.json:ro
+    networks:
+      - matrix
+
+  # Tailscale-only reverse proxy for the admin surface. Its port is published
+  # bound to the Tailscale IP (see ports below), so it is never reachable on the
+  # public IP. It serves synapse-admin and proxies the Synapse admin API from the
+  # SAME origin, keeping /_synapse/admin off the internet (the public Caddy still
+  # refuses it) and avoiding CORS. Config in AdminCaddyfile.
+  caddy-admin:
+    image: {{ caddy_image }}
+    container_name: caddy-admin
+    restart: unless-stopped
+    ports:
+      - "{{ tailscale_ip }}:8080:8080"
+    volumes:
+      - ./AdminCaddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy-admin-data:/data
+      - ./caddy-admin-config:/config
+    networks:
+      - matrix
+
 networks:
   matrix:
     driver: bridge

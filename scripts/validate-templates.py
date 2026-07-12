@@ -8,9 +8,9 @@ states, then parses the output. Uses dummy values for all variables — it check
 STRUCTURE, not secret correctness — so it needs no vault password and is safe to
 run in CI on a public repo.
 
-Also asserts the four container-image pins in vars.yml still match the regex that
-Renovate's custom manager keys off (renovate.json), so a refactor can't silently
-make Renovate go blind.
+Also asserts the container-image pins in vars.yml still match the regex that
+Renovate's custom manager keys off (renovate.json) and each resolves to a bare
+tag, so a refactor can't silently make Renovate go blind or skip a dependency.
 
 Run from the repo root:  python scripts/validate-templates.py
 """
@@ -35,6 +35,7 @@ YAML_TEMPLATES = [
 ]
 JSON_TEMPLATES = [
     "roles/caddy/templates/element-config.json.j2",
+    "roles/caddy/templates/synapse-admin-config.json.j2",
 ]
 
 # The exact regex Renovate's custom manager uses (keep in sync with renovate.json).
@@ -47,7 +48,7 @@ RENOVATE_REGEX = (
     r'(?: versioning=(?P<versioning>\S+))?\s+\w+_image:\s*'
     r'"[^"@]*:(?P<currentValue>[^"@:]+)(?:@(?P<currentDigest>sha256:[a-f0-9]+))?"'
 )
-EXPECTED_PINS = 4
+EXPECTED_PINS = 5
 
 
 def load_fixture():

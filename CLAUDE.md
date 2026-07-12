@@ -108,22 +108,30 @@ templates' behavior at once.
 
 Container image versions are **pinned** as `*_image` vars in
 `group_vars/matrix/vars.yml` (`postgres_image`, `caddy_image`, `synapse_image`,
-`discord_image`) and threaded into `docker-compose.yml.j2` and the two
-`docker run` tasks (`synapse generate`, bridge config/registration gen). There
-are no more `:latest`/floating tags in the templates — change a version by
-editing the var, not the template.
+`discord_image`, `synapse_admin_image`) and threaded into `docker-compose.yml.j2`
+and the two `docker run` tasks (`synapse generate`, bridge config/registration
+gen). There are no more `:latest`/floating tags in the templates — change a
+version by editing the var, not the template. Rolling `:latest` images that have
+no semver tags (mautrix-discord, synapse-admin) are pinned by `@sha256:` **digest**
+instead, which Renovate bumps. Ansible Galaxy collections in `requirements.yml`
+are likewise pinned to **exact** versions, never an open `>=` range — an open
+range reads as permanently satisfied, so Renovate would never bump it (silent
+drift).
 
 `renovate.json` (repo root) drives updates via the hosted **Mend Renovate**
 GitHub App. A regex custom manager reads the `# renovate:` annotation comment
-above each `*_image` line — that comment is load-bearing; keep it. Two tiers:
+above each `*_image` line — that comment is load-bearing; keep it, and keep the
+image value as `repo:tag` so the manager captures a bare tag (a whole `repo:tag`
+in `currentValue` makes Renovate skip the dep as `invalid-value`). Two tiers:
 
 - **Safe (auto-merge, grouped weekly):** Postgres/Caddy minor+patch, Ansible
-  Galaxy collections. Merged without review once CI is green.
+  Galaxy collection minor+patch, and synapse-admin digest (static admin frontend,
+  no migrations). Merged without review once CI is green.
 - **Ping (PR assigned to `Cobular`, `needs-migration` label, never auto-merge):**
   Synapse (runs one-way DB-schema migrations on boot), mautrix-discord (rolling
-  `:latest`, digest-pinned by Renovate; bridge updates can carry DB/config
-  migrations), and any **major** Postgres/Caddy bump. Read notes + take a backup,
-  then merge, then `./deploy.sh configure`.
+  `:latest`, digest-pinned; bridge updates can carry DB/config migrations), and
+  any **major** bump (Postgres, Caddy, or a collection). Read notes + take a
+  backup, then merge, then `./deploy.sh configure`.
 
 **Merging a Renovate PR is not a deploy** — it only changes the pin in git. The
 version reaches the server on the next `configure`. Deploys stay deliberate by

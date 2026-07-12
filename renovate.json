@@ -35,6 +35,14 @@
       "automerge": true
     },
     {
+      "description": "PING TIER — Ansible collection MAJOR bumps can change module behavior the playbook relies on. Assign to you, never auto-merge.",
+      "matchManagers": ["ansible-galaxy"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "assignees": ["Cobular"],
+      "addLabels": ["needs-migration"]
+    },
+    {
       "description": "PING TIER — Postgres/Caddy MAJOR (Postgres needs pg_upgrade; Caddy v3 is a breaking rewrite). Assign to you, never auto-merge.",
       "matchDepNames": ["postgres", "caddy"],
       "matchUpdateTypes": ["major"],
@@ -56,6 +64,14 @@
       "automerge": false,
       "assignees": ["Cobular"],
       "addLabels": ["needs-migration"]
+    },
+    {
+      "description": "SAFE TIER — synapse-admin is a Tailscale-only static admin frontend (no server-side migrations). Digest-pin its rolling :latest and auto-merge weekly.",
+      "matchDepNames": ["ghcr.io/etkecc/synapse-admin"],
+      "pinDigests": true,
+      "groupName": "container images (safe)",
+      "schedule": ["before 6am on monday"],
+      "automerge": true
     }
   ]
 }

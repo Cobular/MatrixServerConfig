@@ -77,3 +77,45 @@
   become_user: "{{ admin_user }}"
   register: caddy_up
   changed_when: "'Started' in caddy_up.stderr or 'Creating' in caddy_up.stderr"
+
+# ── synapse-admin (Tailscale-only web admin panel) ──
+# User management + registration-token minting, reachable only over Tailscale.
+# caddy-admin publishes 8080 on the Tailscale IP and proxies the admin API from
+# the same origin, so /_synapse/admin never touches the public internet.
+- name: Create synapse-admin and caddy-admin directories
+  file:
+    path: "{{ matrix_base_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0755"
+  loop:
+    - synapse-admin
+    - caddy-admin-data
+    - caddy-admin-config
+
+- name: Template synapse-admin config
+  template:
+    src: synapse-admin-config.json.j2
+    dest: "{{ matrix_base_dir }}/synapse-admin/config.json"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+  notify: restart synapse-admin
+
+- name: Template AdminCaddyfile
+  template:
+    src: AdminCaddyfile.j2
+    dest: "{{ matrix_base_dir }}/AdminCaddyfile"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+  notify: restart caddy-admin
+
+- name: Start synapse-admin and caddy-admin
+  command: docker compose up -d synapse-admin caddy-admin
+  args:
+    chdir: "{{ matrix_base_dir }}"
+  become_user: "{{ admin_user }}"
+  register: admin_up
+  changed_when: "'Started' in admin_up.stderr or 'Creating' in admin_up.stderr"

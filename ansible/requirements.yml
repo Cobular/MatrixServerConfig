@@ -1,4 +1,9 @@
 collections:
+  # Pinned to exact versions (not an open ">=" range) so Renovate raises a
+  # visible, auto-mergeable PR on each release. An open range reads as
+  # permanently satisfied, so it never updates — silent drift, which is exactly
+  # what you don't want when tracking CVEs.
   - name: community.docker
-    version: ">=3.6.0"
+    version: "5.2.1"
   - name: community.general
+    version: "13.1.0"

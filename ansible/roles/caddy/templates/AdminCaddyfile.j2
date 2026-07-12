@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+# Config for the caddy-admin container, which publishes port 8080 bound to the
+# Tailscale IP only (see docker-compose.yml). Reachable over the tailnet, never
+# on the public IP. Serving synapse-admin and proxying the Synapse API from the
+# SAME origin keeps it CORS-free and keeps /_synapse/admin off the internet.
+#
+# Plain HTTP is intentional: the transport is already encrypted by Tailscale
+# (WireGuard), and a bare :8080 address avoids a cert the tailnet couldn't
+# validate anyway. handle blocks are sorted most-specific-first by Caddy, so the
+# API paths win over the catch-all that serves the admin UI.
+:8080 {
+    handle /_matrix/* {
+        reverse_proxy synapse:8008
+    }
+    handle /_synapse/* {
+        reverse_proxy synapse:8008
+    }
+    handle {
+        reverse_proxy synapse-admin:80
+    }
+}
