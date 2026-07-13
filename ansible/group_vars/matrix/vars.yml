@@ -59,7 +59,7 @@ discord_image: "dock.mau.dev/mautrix/discord:v0.7.6"
 # Ketesa ships a rolling :latest, so Renovate pins and bumps its digest rather
 # than relying on a mutable tag. It is the successor to synapse-admin.
 # renovate: datasource=docker depName=ghcr.io/etkecc/ketesa
-synapse_admin_image: "ghcr.io/etkecc/ketesa:latest@sha256:c99b593cba168b5760312dee845d0a3f5ff6a67094c88bbb76453cd1d32ffc72"
+synapse_admin_image: "ghcr.io/etkecc/ketesa:latest@sha256:a2f40f95950c16b782ef183f8af64aaf9445ec718b8edfdd6d07b12ba3a9a193"
 
 # ── Synapse ──
 max_upload_size: "100M"
