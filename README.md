@@ -250,6 +250,9 @@ rm /tmp/age.key
 
 ## Architecture
 
+For the one-time encrypted Discord history export and per-user onboarding
+workflow, see [`docs/history-key-migration.md`](docs/history-key-migration.md).
+
 ```
 Internet
   │

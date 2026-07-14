@@ -11,6 +11,7 @@
 # Usage:
 #   ./deploy.sh infra     # Step 1: Provision Azure VM
 #   ./deploy.sh configure # Step 2: Run Ansible playbook
+#   ./deploy.sh backup    # Run and verify an encrypted offsite backup
 #   ./deploy.sh all       # Both steps (pauses between for DNS setup)
 #   ./deploy.sh destroy   # Tear down everything
 
@@ -19,6 +20,22 @@ set -euo pipefail
 RESOURCE_GROUP="matrix-rg"
 ARM_DIR="arm"
 ANSIBLE_DIR="ansible"
+
+inventory_value() {
+    local key="$1"
+    awk -v key="$key" '
+        /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+        $1 !~ /^\[/ {
+            for (i = 1; i <= NF; i++) {
+                if ($i ~ ("^" key "=")) {
+                    sub("^" key "=", "", $i)
+                    print $i
+                    exit
+                }
+            }
+        }
+    ' "$ANSIBLE_DIR/inventory.ini"
+}
 
 cmd_infra() {
     echo "=== Step 1: Provisioning Azure Infrastructure ==="
@@ -87,6 +104,52 @@ cmd_configure() {
     cd ..
 }
 
+cmd_backup() {
+    local backup_host backup_home backup_user ssh_target result
+
+    backup_host=$(inventory_value ansible_host)
+    backup_user=$(inventory_value ansible_user)
+    backup_user=${backup_user:-cobular}
+    backup_home="/home/$backup_user"
+
+    if [ -z "$backup_host" ] || [ "$backup_host" = "PASTE_VM_IP_HERE" ]; then
+        echo "ERROR: Set ansible_host in $ANSIBLE_DIR/inventory.ini"
+        exit 1
+    fi
+
+    ssh_target="$backup_user@$backup_host"
+    echo "=== Running encrypted server backup on $ssh_target ==="
+    result=$(ssh \
+        -o BatchMode=yes \
+        -o ConnectTimeout=10 \
+        -o ConnectionAttempts=1 \
+        -o ServerAliveInterval=5 \
+        -o ServerAliveCountMax=2 \
+        "$ssh_target" \
+        bash -s -- "$backup_home" <<'REMOTE'
+set -euo pipefail
+backup_home="$1"
+
+timeout 30m sudo -n "$backup_home/matrix/backup.sh"
+timeout 30s sudo -n bash -s -- "$backup_home" <<'VERIFY'
+set -euo pipefail
+backup_home="$1"
+stamp=$(tail -n 1 "$backup_home/backups/backup.log" | sed -n 's/.*pg_\([0-9-]*\)\.sql\.gz\.age.*/\1/p')
+test -n "$stamp"
+pg="pg_${stamp}.sql.gz.age"
+keys="keys_${stamp}.tar.gz.age"
+test -s "$backup_home/backups/$pg"
+test -s "$backup_home/backups/$keys"
+remote=$(rclone lsf bk:backups --files-only --include "$pg" --include "$keys")
+printf '%s\n' "$remote" | grep -Fx "$pg" >/dev/null
+printf '%s\n' "$remote" | grep -Fx "$keys" >/dev/null
+printf 'Verified local and offsite artifacts for %s\n' "$stamp"
+VERIFY
+REMOTE
+    )
+    printf '%s\n' "$result"
+}
+
 cmd_all() {
     cmd_infra
     echo ""
@@ -116,13 +179,15 @@ cmd_destroy() {
 case "${1:-help}" in
     infra)     cmd_infra ;;
     configure) cmd_configure ;;
+    backup)    cmd_backup ;;
     all)       cmd_all ;;
     destroy)   cmd_destroy ;;
     *)
-        echo "Usage: ./deploy.sh {infra|configure|all|destroy}"
+        echo "Usage: ./deploy.sh {infra|configure|backup|all|destroy}"
         echo ""
         echo "  infra      Provision Azure VM (ARM template)"
         echo "  configure  Configure server (Ansible playbook)"
+        echo "  backup     Run and verify an encrypted offsite backup"
         echo "  all        Both steps with a pause for DNS setup"
         echo "  destroy    Delete everything"
         ;;

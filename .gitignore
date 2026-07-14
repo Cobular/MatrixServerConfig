@@ -3,3 +3,7 @@
 ansible/.vault-pass
 *.retry
 .venv/
+history-exports/
+history-export-manifest*.yml
+*-element-keys.txt
+*-passphrase.txt

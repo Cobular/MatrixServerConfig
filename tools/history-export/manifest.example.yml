@@ -1,0 +1,11 @@
+version: 1
+
+# Keep false for normal per-user packages. Set true only for a deliberately
+# designated, clean history-steward client whose future invites may redistribute
+# these keys through MSC4268.
+shared_history: false
+
+users:
+  "@cobular:nasa.matrix.cobular.com":
+    rooms:
+      - "!replace-with-room-id:nasa.matrix.cobular.com"
