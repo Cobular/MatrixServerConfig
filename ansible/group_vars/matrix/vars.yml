@@ -50,7 +50,7 @@ postgres_image: "postgres:16.14-alpine"
 # renovate: datasource=docker depName=caddy
 caddy_image: "caddy:2.11.4-alpine"
 # renovate: datasource=docker depName=matrixdotorg/synapse
-synapse_image: "matrixdotorg/synapse:v1.156.0"
+synapse_image: "matrixdotorg/synapse:v1.157.1"
 # On a normal release tag (not the rolling :latest dev build) — Renovate tracks
 # it by semver like Synapse. Ping tier: bridge upgrades can carry DB/config
 # migrations, so read notes + back up before merging a bump.
