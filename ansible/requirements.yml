@@ -4,6 +4,6 @@ collections:
   # permanently satisfied, so it never updates — silent drift, which is exactly
   # what you don't want when tracking CVEs.
   - name: community.docker
-    version: "5.2.1"
+    version: "5.2.2"
   - name: community.general
-    version: "13.1.0"
+    version: "13.3.0"
