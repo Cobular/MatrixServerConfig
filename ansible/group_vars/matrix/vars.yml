@@ -46,7 +46,7 @@ tailscale_ip: "100.97.163.84"
 # onto a newer schema on the next configure → crash). The `# renovate:` comment
 # on each line is load-bearing (Renovate's custom manager reads it) — keep it.
 # renovate: datasource=docker depName=postgres
-postgres_image: "postgres:16.14-alpine"
+postgres_image: "postgres:16.15-alpine"
 # renovate: datasource=docker depName=caddy
 caddy_image: "caddy:2.11.4-alpine"
 # renovate: datasource=docker depName=matrixdotorg/synapse
@@ -59,7 +59,7 @@ discord_image: "dock.mau.dev/mautrix/discord:v0.7.6"
 # Ketesa ships a rolling :latest, so Renovate pins and bumps its digest rather
 # than relying on a mutable tag. It is the successor to synapse-admin.
 # renovate: datasource=docker depName=ghcr.io/etkecc/ketesa
-synapse_admin_image: "ghcr.io/etkecc/ketesa:latest@sha256:a2f40f95950c16b782ef183f8af64aaf9445ec718b8edfdd6d07b12ba3a9a193"
+synapse_admin_image: "ghcr.io/etkecc/ketesa:latest@sha256:01afb9663ecd5eb146c19d842c6fa0b82b790cd497dfaccb4c133d0557e56cd3"
 
 # ── Synapse ──
 max_upload_size: "100M"
