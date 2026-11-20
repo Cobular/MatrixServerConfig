@@ -55,7 +55,7 @@ synapse_image: "matrixdotorg/synapse:v1.157.2"
 # it by semver like Synapse. Ping tier: bridge upgrades can carry DB/config
 # migrations, so read notes + back up before merging a bump.
 # renovate: datasource=docker depName=dock.mau.dev/mautrix/discord
-discord_image: "dock.mau.dev/mautrix/discord:v0.7.6"
+discord_image: "dock.mau.dev/mautrix/discord:v0.7.7"
 # Ketesa ships a rolling :latest, so Renovate pins and bumps its digest rather
 # than relying on a mutable tag. It is the successor to synapse-admin.
 # renovate: datasource=docker depName=ghcr.io/etkecc/ketesa
